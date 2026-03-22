@@ -336,6 +336,18 @@ input:focus { border-color: #333; }
 .drop-zone input[type="file"] { display: none; }
 .drop-zone .dz-hint { font-size: 14px; margin-top: 4px; color: var(--text-muted); }
 
+/* ── Key generator ── */
+.kg-cb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.kg-cb input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
 /* ── Escape tool ── */
 .escape-types { display: flex; gap: 6px; flex-wrap: wrap; }
 .esc-type-btn {

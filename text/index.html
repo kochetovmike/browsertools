@@ -23,6 +23,8 @@
     <option value="timestamp">Unix Timestamp Converter</option>
     <option value="csv">CSV / JSON / Markdown Table</option>
     <option value="escape">Escape / Unescape</option>
+    <option value="keygen">Random Key Generator</option>
+    <option value="lipsum">Lorem Ipsum Generator</option>
   </select>
 </header>
 
@@ -304,6 +306,56 @@
         <textarea id="esc-out" readonly></textarea>
         <div class="err" id="esc-err"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── 8. Random Key Generator ── -->
+  <section id="keygen" class="tool-section">
+    <div class="controls" style="flex-direction:column;align-items:flex-start;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:16px;color:var(--text-dim)">Length</label>
+        <input type="number" id="kg-length" value="32" min="1" max="4096" style="width:90px">
+        <button id="kg-gen-btn">Generate</button>
+        <button class="ghost" id="kg-copy-btn">Copy</button>
+      </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap">
+        <label class="kg-cb"><input type="checkbox" id="kg-lower" checked> Lowercase (a–z)</label>
+        <label class="kg-cb"><input type="checkbox" id="kg-upper" checked> Uppercase (A–Z)</label>
+        <label class="kg-cb"><input type="checkbox" id="kg-digits" checked> Numbers (0–9)</label>
+        <label class="kg-cb"><input type="checkbox" id="kg-special" checked> Special (!@#$…)</label>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        Generated Key
+        <span id="kg-len-info" style="color:var(--text-muted);font-size:13px"></span>
+      </div>
+      <textarea id="kg-out" readonly placeholder="Click Generate…" style="min-height:120px;font-size:15px;word-break:break-all"></textarea>
+    </div>
+    <div class="err" id="kg-err"></div>
+  </section>
+
+  <!-- ── 9. Lorem Ipsum Generator ── -->
+  <section id="lipsum" class="tool-section">
+    <div class="controls" style="flex-direction:column;align-items:flex-start;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select class="fmt" id="ls-unit">
+          <option value="paragraphs">Paragraphs</option>
+          <option value="sentences">Sentences</option>
+          <option value="words">Words</option>
+        </select>
+        <input type="number" id="ls-count" value="3" min="1" max="200" style="width:80px">
+        <button id="ls-gen-btn">Generate</button>
+        <button class="ghost" id="ls-copy-btn">Copy</button>
+      </div>
+      <label class="kg-cb"><input type="checkbox" id="ls-classic" checked> Start with "Lorem ipsum dolor sit amet…"</label>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        Output
+        <span id="ls-info" style="color:var(--text-muted);font-size:13px"></span>
+      </div>
+      <textarea id="ls-out" readonly placeholder="Click Generate…" style="min-height:260px"></textarea>
     </div>
   </section>
 
@@ -858,6 +910,163 @@ document.getElementById('esc-swap-btn').addEventListener('click', () => {
 
 copyBtn('esc-copy', 'esc-out');
 copyBtn('esc-in-copy', 'esc-in');
+
+// ─────────────────────────────────────────
+// 8. Random Key Generator
+// ─────────────────────────────────────────
+
+(function () {
+  const LOWER   = 'abcdefghijklmnopqrstuvwxyz';
+  const UPPER   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const DIGITS  = '0123456789';
+  const SPECIAL = '!@#$%^&*()-_=+[]{}|;:,.<>?';
+
+  const lenEl     = document.getElementById('kg-length');
+  const outEl     = document.getElementById('kg-out');
+  const infoEl    = document.getElementById('kg-len-info');
+  const genBtn    = document.getElementById('kg-gen-btn');
+  const copyBtnEl = document.getElementById('kg-copy-btn');
+
+  function generate() {
+    hideErr('kg-err');
+    const len = parseInt(lenEl.value, 10);
+    if (!len || len < 1 || len > 4096) { showErr('kg-err', 'Length must be between 1 and 4096.'); return; }
+
+    let charset = '';
+    if (document.getElementById('kg-lower').checked)   charset += LOWER;
+    if (document.getElementById('kg-upper').checked)   charset += UPPER;
+    if (document.getElementById('kg-digits').checked)  charset += DIGITS;
+    if (document.getElementById('kg-special').checked) charset += SPECIAL;
+
+    if (!charset) { showErr('kg-err', 'Select at least one character type.'); return; }
+
+    const arr = new Uint32Array(len);
+    crypto.getRandomValues(arr);
+    const key = Array.from(arr, n => charset[n % charset.length]).join('');
+    outEl.value = key;
+    infoEl.textContent = len + ' characters';
+  }
+
+  genBtn.addEventListener('click', generate);
+
+  copyBtnEl.addEventListener('click', function () {
+    if (!outEl.value) return;
+    navigator.clipboard.writeText(outEl.value).then(function () {
+      const orig = copyBtnEl.textContent;
+      copyBtnEl.textContent = 'Copied!';
+      copyBtnEl.classList.add('ok');
+      setTimeout(function () { copyBtnEl.textContent = orig; copyBtnEl.classList.remove('ok'); }, 1500);
+    });
+  });
+})();
+
+// ─────────────────────────────────────────
+// 9. Lorem Ipsum Generator
+// ─────────────────────────────────────────
+
+(function () {
+  const WORDS = [
+    'lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit',
+    'sed','do','eiusmod','tempor','incididunt','ut','labore','et','dolore',
+    'magna','aliqua','enim','ad','minim','veniam','quis','nostrud','exercitation',
+    'ullamco','laboris','nisi','aliquip','ex','ea','commodo','consequat','duis',
+    'aute','irure','in','reprehenderit','voluptate','velit','esse','cillum',
+    'fugiat','nulla','pariatur','excepteur','sint','occaecat','cupidatat','non',
+    'proident','sunt','culpa','qui','officia','deserunt','mollit','anim','id',
+    'est','laborum','pellentesque','habitant','morbi','tristique','senectus',
+    'netus','malesuada','fames','turpis','egestas','pretium','aenean','pharetra',
+    'magna','ac','placerat','vestibulum','lectus','mauris','ultrices','eros',
+    'purus','faucibus','ornare','suspendisse','sed','nisi','lacus','volutpat',
+    'maecenas','volutpat','blandit','aliquam','etiam','erat','velit','scelerisque',
+    'semper','auctor','neque','vitae','tempus','quam','pellentesque','nec','nam',
+    'aliquam','donec','adipiscing','tristique','risus','nec','feugiat','nisl',
+    'pretium','fusce','id','velit','rutrum','tellus','elementum','sagittis',
+    'vivamus','at','augue','eget','arcu','dictum','varius','duis','ultricies',
+    'lacus','sed','turpis','tincidunt','id','aliquet','risus','feugiat',
+    'bibendum','arcu','non','odio','euismod','lacinia','at','quis','risus',
+    'cras','adipiscing','enim','eu','turpis','egestas','pretium','aenean'
+  ];
+
+  const CLASSIC = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+
+  function rnd(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  function randomWord() {
+    return WORDS[Math.floor(Math.random() * WORDS.length)];
+  }
+
+  function makeSentence(forceClassic) {
+    if (forceClassic) return CLASSIC;
+    const len = rnd(6, 14);
+    const words = [];
+    for (let i = 0; i < len; i++) words.push(randomWord());
+    words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+    return words.join(' ') + '.';
+  }
+
+  function makeParagraph(firstParagraph, classic) {
+    const sentenceCount = rnd(4, 8);
+    const sentences = [];
+    for (let i = 0; i < sentenceCount; i++) {
+      sentences.push(makeSentence(i === 0 && firstParagraph && classic));
+    }
+    return sentences.join(' ');
+  }
+
+  function generate() {
+    const unit    = document.getElementById('ls-unit').value;
+    const count   = parseInt(document.getElementById('ls-count').value, 10);
+    const classic = document.getElementById('ls-classic').checked;
+    const out     = document.getElementById('ls-out');
+    const info    = document.getElementById('ls-info');
+
+    if (!count || count < 1) return;
+
+    let result = '';
+
+    if (unit === 'paragraphs') {
+      const paras = [];
+      for (let i = 0; i < count; i++) paras.push(makeParagraph(i === 0, classic));
+      result = paras.join('\n\n');
+      info.textContent = count + ' paragraph' + (count > 1 ? 's' : '');
+    } else if (unit === 'sentences') {
+      const sents = [];
+      for (let i = 0; i < count; i++) sents.push(makeSentence(i === 0 && classic));
+      result = sents.join(' ');
+      info.textContent = count + ' sentence' + (count > 1 ? 's' : '');
+    } else {
+      const words = [];
+      if (classic) {
+        const classicWords = CLASSIC.replace(/[^a-zA-Z ]/g, '').toLowerCase().split(' ');
+        for (let i = 0; i < Math.min(count, classicWords.length); i++) words.push(classicWords[i]);
+      }
+      while (words.length < count) words.push(randomWord());
+      words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+      result = words.join(' ');
+      info.textContent = count + ' word' + (count > 1 ? 's' : '');
+    }
+
+    out.value = result;
+  }
+
+  document.getElementById('ls-gen-btn').addEventListener('click', generate);
+
+  document.getElementById('ls-copy-btn').addEventListener('click', function () {
+    const out = document.getElementById('ls-out');
+    if (!out.value) return;
+    navigator.clipboard.writeText(out.value).then(function () {
+      const orig = this.textContent;
+      this.textContent = 'Copied!';
+      this.classList.add('ok');
+      setTimeout(function () {
+        document.getElementById('ls-copy-btn').textContent = orig;
+        document.getElementById('ls-copy-btn').classList.remove('ok');
+      }, 1500);
+    }.bind(this));
+  });
+})();
 </script>
 </body>
 </html>
