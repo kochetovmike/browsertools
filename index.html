@@ -16,21 +16,35 @@
     .tool-card {
       background: var(--surface);
       border: 1px solid var(--border2);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 32px 28px;
       text-decoration: none;
       color: var(--text);
       display: flex;
       flex-direction: column;
       gap: 10px;
-      transition: border-color .15s, background .15s;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s, background .2s, box-shadow .2s, transform .2s;
+    }
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+      opacity: 0;
+      transition: opacity .2s;
     }
     .tool-card:hover {
-      border-color: var(--accent);
+      border-color: rgba(90, 156, 248, 0.4);
       background: var(--surface2);
+      box-shadow: 0 8px 32px rgba(90, 156, 248, 0.1), 0 2px 8px rgba(0,0,0,0.4);
+      transform: translateY(-3px);
     }
+    .tool-card:hover::before { opacity: 1; }
     .tool-card .card-icon {
-      font-size: 32px;
+      font-size: 34px;
       line-height: 1;
     }
     .tool-card .card-title {
@@ -51,10 +65,14 @@
       line-height: 1.8;
     }
     .landing-intro strong {
-      color: var(--text);
       display: block;
-      font-size: 22px;
-      margin-bottom: 8px;
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #dde2f0 0%, #a0c4ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
   </style>
 </head>
