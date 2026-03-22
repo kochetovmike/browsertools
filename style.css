@@ -24,12 +24,14 @@ body {
   display: flex;
   flex-direction: column;
   font-size: 18px;
+  scrollbar-gutter: stable;
 }
 
 /* ── Header ── */
 header {
   border-bottom: 1px solid var(--border);
   padding: 14px 24px;
+  min-height: 66px;
   display: flex;
   align-items: center;
   gap: 20px;
