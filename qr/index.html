@@ -6,7 +6,7 @@
   <title>QR Code — OneTabTools</title>
   <link rel="icon" type="image/svg+xml" href="../src/favicon.svg">
   <link rel="stylesheet" href="../style.css">
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     .qr-wrap {
       display: flex;
@@ -74,7 +74,7 @@
     <div class="err" id="qr-err"></div>
 
     <div class="qr-canvas-wrap" id="qr-canvas-wrap">
-      <canvas id="qr-canvas"></canvas>
+      <div id="qr-output"></div>
     </div>
 
     <div class="qr-download-row" id="qr-download-row">
@@ -90,7 +90,7 @@
 <script>
   const input       = document.getElementById('qr-input');
   const btn         = document.getElementById('qr-btn');
-  const canvas      = document.getElementById('qr-canvas');
+  const output      = document.getElementById('qr-output');
   const canvasWrap  = document.getElementById('qr-canvas-wrap');
   const downloadRow = document.getElementById('qr-download-row');
   const errEl       = document.getElementById('qr-err');
@@ -106,6 +106,10 @@
     errEl.classList.remove('on');
   }
 
+  function getCanvas() {
+    return output.querySelector('canvas');
+  }
+
   function generate() {
     const text = input.value.trim();
     hideErr();
@@ -117,20 +121,18 @@
       return;
     }
 
-    QRCode.toCanvas(canvas, text, {
+    output.innerHTML = '';
+    new QRCode(output, {
+      text: text,
       width: 320,
-      margin: 2,
-      color: { dark: '#000000', light: '#ffffff' }
-    }, function (err) {
-      if (err) {
-        showErr('Failed to generate QR code: ' + err.message);
-        canvasWrap.style.display = 'none';
-        downloadRow.style.display = 'none';
-        return;
-      }
-      canvasWrap.style.display = '';
-      downloadRow.style.display = 'flex';
+      height: 320,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
     });
+
+    canvasWrap.style.display = 'block';
+    downloadRow.style.display = 'flex';
   }
 
   btn.addEventListener('click', generate);
@@ -139,6 +141,8 @@
   });
 
   dlPng.addEventListener('click', function () {
+    const canvas = getCanvas();
+    if (!canvas) return;
     const text = input.value.trim() || 'qrcode';
     const filename = text.replace(/[^a-z0-9]/gi, '_').slice(0, 40) + '.png';
     const link = document.createElement('a');
@@ -148,6 +152,8 @@
   });
 
   copyBtn.addEventListener('click', function () {
+    const canvas = getCanvas();
+    if (!canvas) return;
     canvas.toBlob(function (blob) {
       navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
         const orig = copyBtn.textContent;
