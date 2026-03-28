@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Lorem Ipsum — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-lorem-ipsum">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Lorem Ipsum Generator</span>
+    </div>
+    <main>
+      <div class="controls" style="flex-direction:column;align-items:flex-start;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select class="fmt" id="ls-unit">
+            <option value="paragraphs">Paragraphs</option>
+            <option value="sentences">Sentences</option>
+            <option value="words">Words</option>
+          </select>
+          <input type="number" id="ls-count" value="3" min="1" max="200" style="width:80px">
+          <button id="ls-gen-btn">Generate</button>
+          <button class="ghost" id="ls-copy-btn">Copy</button>
+        </div>
+        <label class="kg-cb"><input type="checkbox" id="ls-classic" checked> Start with "Lorem ipsum dolor sit amet…"</label>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          Output
+          <span id="ls-info" style="color:var(--text-muted);font-size:13px"></span>
+        </div>
+        <textarea id="ls-out" readonly placeholder="Click Generate…" style="min-height:260px"></textarea>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+(function () {
+  const WORDS = [
+    'lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit',
+    'sed','do','eiusmod','tempor','incididunt','ut','labore','et','dolore',
+    'magna','aliqua','enim','ad','minim','veniam','quis','nostrud','exercitation',
+    'ullamco','laboris','nisi','aliquip','ex','ea','commodo','consequat','duis',
+    'aute','irure','in','reprehenderit','voluptate','velit','esse','cillum',
+    'fugiat','nulla','pariatur','excepteur','sint','occaecat','cupidatat','non',
+    'proident','sunt','culpa','qui','officia','deserunt','mollit','anim','id',
+    'est','laborum','pellentesque','habitant','morbi','tristique','senectus',
+    'netus','malesuada','fames','turpis','egestas','pretium','aenean','pharetra',
+    'magna','ac','placerat','vestibulum','lectus','mauris','ultrices','eros',
+    'purus','faucibus','ornare','suspendisse','sed','nisi','lacus','volutpat',
+    'maecenas','volutpat','blandit','aliquam','etiam','erat','velit','scelerisque',
+    'semper','auctor','neque','vitae','tempus','quam','pellentesque','nec','nam',
+    'aliquam','donec','adipiscing','tristique','risus','nec','feugiat','nisl',
+    'pretium','fusce','id','velit','rutrum','tellus','elementum','sagittis',
+    'vivamus','at','augue','eget','arcu','dictum','varius','duis','ultricies',
+    'lacus','sed','turpis','tincidunt','id','aliquet','risus','feugiat',
+    'bibendum','arcu','non','odio','euismod','lacinia','at','quis','risus',
+    'cras','adipiscing','enim','eu','turpis','egestas','pretium','aenean'
+  ];
+  const CLASSIC = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+
+  function rnd(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+  function randomWord() { return WORDS[Math.floor(Math.random() * WORDS.length)]; }
+  function makeSentence(forceClassic) {
+    if (forceClassic) return CLASSIC;
+    const words = [];
+    for (let i = 0; i < rnd(6, 14); i++) words.push(randomWord());
+    words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+    return words.join(' ') + '.';
+  }
+  function makeParagraph(firstParagraph, classic) {
+    const sentences = [];
+    for (let i = 0; i < rnd(4, 8); i++) sentences.push(makeSentence(i === 0 && firstParagraph && classic));
+    return sentences.join(' ');
+  }
+
+  function generate() {
+    const unit    = document.getElementById('ls-unit').value;
+    const count   = parseInt(document.getElementById('ls-count').value, 10);
+    const classic = document.getElementById('ls-classic').checked;
+    const out     = document.getElementById('ls-out');
+    const info    = document.getElementById('ls-info');
+    if (!count || count < 1) return;
+    let result = '';
+
+    if (unit === 'paragraphs') {
+      const paras = [];
+      for (let i = 0; i < count; i++) paras.push(makeParagraph(i === 0, classic));
+      result = paras.join('\n\n');
+      info.textContent = count + ' paragraph' + (count > 1 ? 's' : '');
+    } else if (unit === 'sentences') {
+      const sents = [];
+      for (let i = 0; i < count; i++) sents.push(makeSentence(i === 0 && classic));
+      result = sents.join(' ');
+      info.textContent = count + ' sentence' + (count > 1 ? 's' : '');
+    } else {
+      const words = [];
+      if (classic) {
+        const cw = CLASSIC.replace(/[^a-zA-Z ]/g, '').toLowerCase().split(' ');
+        for (let i = 0; i < Math.min(count, cw.length); i++) words.push(cw[i]);
+      }
+      while (words.length < count) words.push(randomWord());
+      words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+      result = words.join(' ');
+      info.textContent = count + ' word' + (count > 1 ? 's' : '');
+    }
+    out.value = result;
+  }
+
+  document.getElementById('ls-gen-btn').addEventListener('click', generate);
+
+  document.getElementById('ls-copy-btn').addEventListener('click', function () {
+    const out = document.getElementById('ls-out');
+    if (!out.value) return;
+    navigator.clipboard.writeText(out.value).then(function () {
+      const btn = document.getElementById('ls-copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('ok');
+      setTimeout(function () { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

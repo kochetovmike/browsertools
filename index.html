@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="./">
   <title>OneTabTools</title>
   <link rel="icon" type="image/svg+xml" href="src/favicon.svg">
   <link rel="stylesheet" href="style.css">
@@ -43,20 +44,9 @@
       transform: translateY(-3px);
     }
     .tool-card:hover::before { opacity: 1; }
-    .tool-card .card-icon {
-      font-size: 34px;
-      line-height: 1;
-    }
-    .tool-card .card-title {
-      font-size: 20px;
-      font-weight: bold;
-      color: var(--text);
-    }
-    .tool-card .card-desc {
-      font-size: 15px;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
+    .tool-card .card-icon { font-size: 34px; line-height: 1; }
+    .tool-card .card-title { font-size: 20px; font-weight: bold; color: var(--text); }
+    .tool-card .card-desc { font-size: 15px; color: var(--text-dim); line-height: 1.5; }
     .landing-intro {
       text-align: center;
       padding: 60px 20px 0;
@@ -76,38 +66,45 @@
     }
   </style>
 </head>
-<body>
+<body data-page="">
 
-<header>
-  <a class="logo" href="." style="text-decoration:none">OneTab<span>Tools</span><span style="color:var(--text);font-weight:bold;margin-left:8px">/ Home</span></a>
-</header>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">OneTabTools</span>
+    </div>
+    <main>
+      <div class="landing-intro">
+        <strong>Browser-based tools for everyday use</strong>
+        All processing is done locally — nothing leaves your browser.
+      </div>
 
-<main>
-  <div class="landing-intro">
-    <strong>Browser-based tools for everyday use</strong>
-    All processing is done locally — nothing leaves your browser.
+      <div class="landing-grid">
+        <a class="tool-card" href="pdf/merge/">
+          <div class="card-icon">&#128209;</div>
+          <div class="card-title">PDF Tools</div>
+          <div class="card-desc">Merge multiple PDFs or split a PDF into individual pages — all in the browser.</div>
+        </a>
+        <a class="tool-card" href="text/json-yaml-toml/">
+          <div class="card-icon">&#128196;</div>
+          <div class="card-title">Text Tools</div>
+          <div class="card-desc">JSON / YAML / TOML converter, Markdown preview, Base64, URL encode/decode, timestamps, CSV, and more.</div>
+        </a>
+        <a class="tool-card" href="qr/">
+          <div class="card-icon">&#9638;</div>
+          <div class="card-title">QR Code</div>
+          <div class="card-desc">Generate QR codes from URLs, text, or any data. Download as PNG.</div>
+        </a>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
   </div>
+</div>
 
-  <div class="landing-grid">
-    <a class="tool-card" href="text/">
-      <div class="card-icon">&#128196;</div>
-      <div class="card-title">Text Tools</div>
-      <div class="card-desc">JSON / YAML / TOML converter, Markdown preview, Base64, URL encode/decode, timestamps, CSV, and string escaping.</div>
-    </a>
-    <a class="tool-card" href="pdf/">
-      <div class="card-icon">&#128209;</div>
-      <div class="card-title">PDF Tools</div>
-      <div class="card-desc">View, annotate, merge, and edit PDF files directly in your browser.</div>
-    </a>
-    <a class="tool-card" href="qr/">
-      <div class="card-icon">&#9638;</div>
-      <div class="card-title">QR Code</div>
-      <div class="card-desc">Generate QR codes from URLs, text, or any data. Download as PNG or SVG.</div>
-    </a>
-  </div>
-</main>
-
-<footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+<script src="src/nav.js"></script>
 
 </body>
 </html>

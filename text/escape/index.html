@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Escape / Unescape — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-escape">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Escape / Unescape</span>
+    </div>
+    <main>
+      <div class="controls" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="escape-types">
+          <button class="esc-type-btn active" data-esc="html">HTML Entities</button>
+          <button class="esc-type-btn" data-esc="xml">XML</button>
+          <button class="esc-type-btn" data-esc="regex">Regex</button>
+          <button class="esc-type-btn" data-esc="sql">SQL String</button>
+          <button class="esc-type-btn" data-esc="json-str">JSON String</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="esc-btn">Escape</button>
+          <button id="unesc-btn">Unescape</button>
+          <button class="ghost" id="esc-swap-btn">⇄ Swap</button>
+        </div>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">Input <button class="mini" id="esc-in-copy">Copy</button></div>
+          <textarea id="esc-in" placeholder="Paste text to escape or unescape..."></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Output <button class="mini" id="esc-copy">Copy</button></div>
+          <textarea id="esc-out" readonly></textarea>
+          <div class="err" id="esc-err"></div>
+        </div>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+function copyBtn(btnId, taId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const ta = document.getElementById(taId);
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById(btnId);
+      const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+}
+
+const ESCAPERS = {
+  html: {
+    escape:   s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'),
+    unescape: s => s.replace(/&#(\d+);/g, (_,n)=>String.fromCharCode(+n))
+                    .replace(/&#x([0-9a-f]+);/gi, (_,h)=>String.fromCharCode(parseInt(h,16)))
+                    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'")
+  },
+  xml: {
+    escape:   s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'),
+    unescape: s => s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+  },
+  regex: {
+    escape:   s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+    unescape: s => s.replace(/\\([.*+?^${}()|[\]\\])/g, '$1')
+  },
+  sql: {
+    escape:   s => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'"),
+    unescape: s => s.replace(/\\'/g, "'").replace(/\\\\/g, '\\')
+  },
+  'json-str': {
+    escape:   s => JSON.stringify(s).slice(1, -1),
+    unescape: s => { try { return JSON.parse('"' + s + '"'); } catch (e) { throw new Error('Invalid JSON string escape: ' + e.message); } }
+  }
+};
+
+let _escType = 'html';
+document.querySelectorAll('.esc-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.esc-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _escType = btn.dataset.esc;
+  });
+});
+
+document.getElementById('esc-btn').addEventListener('click', () => {
+  hideErr('esc-err');
+  const v = document.getElementById('esc-in').value;
+  try { document.getElementById('esc-out').value = ESCAPERS[_escType].escape(v); }
+  catch (e) { showErr('esc-err', e.message); }
+});
+document.getElementById('unesc-btn').addEventListener('click', () => {
+  hideErr('esc-err');
+  const v = document.getElementById('esc-in').value;
+  try { document.getElementById('esc-out').value = ESCAPERS[_escType].unescape(v); }
+  catch (e) { showErr('esc-err', e.message); }
+});
+document.getElementById('esc-swap-btn').addEventListener('click', () => {
+  const a = document.getElementById('esc-in');
+  const b = document.getElementById('esc-out');
+  if (b.value) { a.value = b.value; b.value = ''; }
+});
+
+copyBtn('esc-copy', 'esc-out');
+copyBtn('esc-in-copy', 'esc-in');
+</script>
+
+</body>
+</html>

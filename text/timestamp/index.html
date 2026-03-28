@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Unix Timestamp — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-timestamp">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Unix Timestamp</span>
+    </div>
+    <main>
+      <div class="ts-grid">
+        <div class="ts-col">
+          <div class="ts-label">Unix Timestamp</div>
+          <input type="text" id="ts-unix" placeholder="e.g. 1700000000 or 1700000000000">
+          <button id="ts-unix-btn">Convert →</button>
+        </div>
+        <div class="ts-mid">⇄</div>
+        <div class="ts-col">
+          <div class="ts-label">ISO 8601 / UTC</div>
+          <div class="ts-human-row">
+            <input type="text" id="ts-human" placeholder="2024-01-15T12:00:00.000Z">
+            <button class="ghost ts-cal-btn" id="ts-cal-btn" title="Pick date &amp; time">&#128197;</button>
+            <input type="datetime-local" id="ts-cal-picker" step="1" style="display:none">
+          </div>
+          <button id="ts-human-btn">Convert →</button>
+        </div>
+      </div>
+
+      <div class="ts-result" id="ts-result" style="display:none">
+        <div class="ts-row"><span class="ts-rl">Unix (seconds)</span><span class="ts-rv" id="ts-s">—</span></div>
+        <div class="ts-row"><span class="ts-rl">Unix (milliseconds)</span><span class="ts-rv" id="ts-ms">—</span></div>
+        <div class="ts-row"><span class="ts-rl">ISO 8601 (UTC)</span><span class="ts-rv" id="ts-iso">—</span></div>
+        <div class="ts-row"><span class="ts-rl">Local time</span><span class="ts-rv" id="ts-local">—</span></div>
+        <div class="ts-row"><span class="ts-rl">UTC time</span><span class="ts-rv" id="ts-utc">—</span></div>
+        <div class="ts-row"><span class="ts-rl">Relative</span><span class="ts-rv" id="ts-rel">—</span></div>
+      </div>
+
+      <div class="ts-now">
+        <button class="ghost" id="ts-now-btn" style="padding:5px 12px;font-size:15px">Use Current Time</button>
+        <span>Current Unix: <span id="ts-now-val">—</span></span>
+      </div>
+      <div class="err" id="ts-err"></div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+
+function relTime(ms) {
+  const d = Date.now() - ms, a = Math.abs(d), fut = d < 0;
+  const s = Math.floor(a/1000), m = Math.floor(s/60), h = Math.floor(m/60),
+        dy = Math.floor(h/24), yr = Math.floor(dy/365);
+  const str = s < 60  ? `${s} second${s!==1?'s':''}` :
+              m < 60  ? `${m} minute${m!==1?'s':''}` :
+              h < 24  ? `${h} hour${h!==1?'s':''}` :
+              dy < 365? `${dy} day${dy!==1?'s':''}` :
+                        `${yr} year${yr!==1?'s':''}`;
+  return fut ? `in ${str}` : `${str} ago`;
+}
+
+function tsDisplay(dt) {
+  const ms = dt.getTime(), s = Math.floor(ms/1000);
+  document.getElementById('ts-result').style.display = 'block';
+  document.getElementById('ts-s').textContent    = s;
+  document.getElementById('ts-ms').textContent   = ms;
+  document.getElementById('ts-iso').textContent  = dt.toISOString();
+  document.getElementById('ts-local').textContent = dt.toLocaleString('de-AT', { timeZone: 'Europe/Vienna' });
+  document.getElementById('ts-utc').textContent  = dt.toUTCString();
+  document.getElementById('ts-rel').textContent  = relTime(ms);
+}
+
+document.getElementById('ts-unix-btn').addEventListener('click', () => {
+  hideErr('ts-err');
+  let v = parseFloat(document.getElementById('ts-unix').value.trim());
+  if (isNaN(v)) { showErr('ts-err', 'Enter a valid number.'); return; }
+  if (v < 1e10) v *= 1000;
+  const dt = new Date(v);
+  document.getElementById('ts-human').value = dt.toISOString();
+  tsDisplay(dt);
+});
+
+document.getElementById('ts-human-btn').addEventListener('click', () => {
+  hideErr('ts-err');
+  const v = document.getElementById('ts-human').value;
+  if (!v) return;
+  const dt = new Date(v);
+  if (isNaN(dt.getTime())) { showErr('ts-err', 'Invalid date/time.'); return; }
+  document.getElementById('ts-unix').value = Math.floor(dt.getTime()/1000);
+  tsDisplay(dt);
+});
+
+document.getElementById('ts-now-btn').addEventListener('click', () => {
+  const dt = new Date();
+  document.getElementById('ts-unix').value  = Math.floor(dt.getTime()/1000);
+  document.getElementById('ts-human').value = dt.toISOString();
+  tsDisplay(dt);
+});
+
+const calBtn    = document.getElementById('ts-cal-btn');
+const calPicker = document.getElementById('ts-cal-picker');
+calBtn.addEventListener('click', () => calPicker.showPicker());
+calPicker.addEventListener('change', () => {
+  if (!calPicker.value) return;
+  const dt = new Date(calPicker.value + 'Z');
+  document.getElementById('ts-human').value = dt.toISOString();
+});
+
+function tickNow() { document.getElementById('ts-now-val').textContent = Math.floor(Date.now()/1000); }
+tickNow();
+setInterval(tickNow, 1000);
+</script>
+
+</body>
+</html>

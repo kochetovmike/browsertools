@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>URL Encode / Decode — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-url-encode">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">URL Encode / Decode</span>
+    </div>
+    <main>
+      <div class="controls">
+        <button id="url-enc-btn">Encode</button>
+        <button id="url-dec-btn">Decode</button>
+        <button class="ghost" id="url-swap-btn">⇄ Swap</button>
+        <select class="fmt" id="url-mode">
+          <option value="component">encodeURIComponent</option>
+          <option value="full">encodeURI (full URL)</option>
+        </select>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">Input <button class="mini" id="url-in-copy">Copy</button></div>
+          <textarea id="url-in" placeholder="https://example.com/path?q=hello world&amp;lang=en"></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Output <button class="mini" id="url-copy">Copy</button></div>
+          <textarea id="url-out" readonly></textarea>
+          <div class="err" id="url-err"></div>
+        </div>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+function copyBtn(btnId, taId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const ta = document.getElementById(taId);
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById(btnId);
+      const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+}
+
+document.getElementById('url-enc-btn').addEventListener('click', () => {
+  hideErr('url-err');
+  const v    = document.getElementById('url-in').value;
+  const mode = document.getElementById('url-mode').value;
+  try { document.getElementById('url-out').value = mode === 'full' ? encodeURI(v) : encodeURIComponent(v); }
+  catch (e) { showErr('url-err', e.message); }
+});
+document.getElementById('url-dec-btn').addEventListener('click', () => {
+  hideErr('url-err');
+  const v    = document.getElementById('url-in').value;
+  const mode = document.getElementById('url-mode').value;
+  try { document.getElementById('url-out').value = mode === 'full' ? decodeURI(v) : decodeURIComponent(v); }
+  catch (e) { showErr('url-err', 'Decode error: ' + e.message); }
+});
+document.getElementById('url-swap-btn').addEventListener('click', () => {
+  const a = document.getElementById('url-in');
+  const b = document.getElementById('url-out');
+  if (b.value) { a.value = b.value; b.value = ''; }
+});
+copyBtn('url-copy', 'url-out');
+copyBtn('url-in-copy', 'url-in');
+</script>
+
+</body>
+</html>

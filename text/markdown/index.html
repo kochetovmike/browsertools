@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Markdown ↔ HTML — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+</head>
+<body data-page="text-markdown">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Markdown ↔ HTML</span>
+    </div>
+    <main>
+      <div class="controls">
+        <select class="fmt" id="md-mode">
+          <option value="md2html">Markdown → HTML</option>
+          <option value="preview">Markdown Preview</option>
+          <option value="html2md">HTML → Markdown (basic)</option>
+        </select>
+        <button id="md-convert-btn">Convert</button>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">Input <button class="mini" id="md-in-copy">Copy</button></div>
+          <textarea id="md-in" placeholder="# Hello World&#10;&#10;Type **Markdown** or HTML here..."></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <span id="md-out-label">HTML Output</span>
+            <button class="mini" id="md-copy">Copy</button>
+          </div>
+          <textarea id="md-out" readonly placeholder="Output..."></textarea>
+          <div class="preview-pane" id="md-preview" style="display:none"></div>
+        </div>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+function copyBtn(btnId, taId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const ta = document.getElementById(taId);
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById(btnId);
+      const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+}
+
+function strip(html) { return html.replace(/<[^>]+>/g, ''); }
+
+function htmlToMarkdown(html) {
+  let s = html;
+  s = s.replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_, n, c) => '\n' + '#'.repeat(+n) + ' ' + strip(c).trim() + '\n\n');
+  s = s.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, (_, c) => '\n```\n' + strip(c) + '\n```\n\n');
+  s = s.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, c) => strip(c).split('\n').map(l => '> ' + l).join('\n') + '\n\n');
+  s = s.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, c) => '- ' + strip(c).trim() + '\n');
+  s = s.replace(/<ul[^>]*>|<\/ul>|<ol[^>]*>|<\/ol>/gi, '\n');
+  s = s.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, (_, c) => strip(c).trim() + '\n\n');
+  s = s.replace(/<hr[^>]*\/?>/gi, '\n---\n\n');
+  s = s.replace(/<br\s*\/?>/gi, '\n');
+  s = s.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**');
+  s = s.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**');
+  s = s.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*');
+  s = s.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
+  s = s.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`');
+  s = s.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)');
+  s = s.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*\/?>/gi, '![$2]($1)');
+  s = strip(s);
+  s = s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  return s.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function mdConvert() {
+  const mode  = document.getElementById('md-mode').value;
+  const input = document.getElementById('md-in').value;
+  const outTA = document.getElementById('md-out');
+  const prev  = document.getElementById('md-preview');
+  const label = document.getElementById('md-out-label');
+
+  outTA.style.display = 'block';
+  prev.style.display  = 'none';
+
+  if (mode === 'md2html') {
+    label.textContent = 'HTML Output';
+    outTA.value = marked.parse(input);
+  } else if (mode === 'preview') {
+    label.textContent = 'Preview';
+    outTA.style.display = 'none';
+    prev.style.display  = 'block';
+    prev.innerHTML = marked.parse(input);
+  } else if (mode === 'html2md') {
+    label.textContent = 'Markdown Output';
+    outTA.value = htmlToMarkdown(input);
+  }
+}
+
+document.getElementById('md-convert-btn').addEventListener('click', mdConvert);
+document.getElementById('md-mode').addEventListener('change', () => {
+  if (document.getElementById('md-in').value) mdConvert();
+});
+document.getElementById('md-in').addEventListener('input', () => {
+  if (document.getElementById('md-mode').value === 'preview') mdConvert();
+});
+document.getElementById('md-in').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') mdConvert();
+});
+
+copyBtn('md-copy', 'md-out');
+copyBtn('md-in-copy', 'md-in');
+</script>
+
+</body>
+</html>

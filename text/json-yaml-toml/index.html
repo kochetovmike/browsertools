@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>JSON / YAML / TOML — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+</head>
+<body data-page="text-json-yaml-toml">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">JSON / YAML / TOML</span>
+    </div>
+    <main>
+      <div class="controls">
+        <select class="fmt" id="fc-from">
+          <option value="json">JSON</option>
+          <option value="yaml">YAML</option>
+          <option value="toml">TOML</option>
+        </select>
+        <span class="arrow">→</span>
+        <select class="fmt" id="fc-to">
+          <option value="yaml">YAML</option>
+          <option value="json">JSON</option>
+          <option value="toml">TOML</option>
+        </select>
+        <button id="fc-convert-btn">Convert</button>
+        <button class="ghost" id="fc-swap-btn">⇄ Swap</button>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-head">Input <button class="mini" id="fc-in-copy">Copy</button></div>
+          <textarea id="fc-in" placeholder='{"key": "value", "num": 42}'></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Output <button class="mini" id="fc-copy">Copy</button></div>
+          <textarea id="fc-out" readonly placeholder="Output will appear here..."></textarea>
+        </div>
+      </div>
+      <div class="err" id="fc-err"></div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script type="module">
+  import * as smolTOML from 'https://esm.sh/smol-toml@1.3.4';
+  window._TOML = smolTOML;
+</script>
+<script>
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+function copyBtn(btnId, taId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const ta = document.getElementById(taId);
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById(btnId);
+      const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+}
+
+function fcParse(text, fmt) {
+  if (fmt === 'json') return JSON.parse(text);
+  if (fmt === 'yaml') return jsyaml.load(text);
+  if (fmt === 'toml') {
+    if (!window._TOML) throw new Error('TOML library still loading — please try again.');
+    return window._TOML.parse(text);
+  }
+  throw new Error('Unknown format');
+}
+function fcSerialize(obj, fmt) {
+  if (fmt === 'json') return JSON.stringify(obj, null, 2);
+  if (fmt === 'yaml') return jsyaml.dump(obj, { lineWidth: -1 });
+  if (fmt === 'toml') {
+    if (!window._TOML) throw new Error('TOML library still loading — please try again.');
+    return window._TOML.stringify(obj);
+  }
+  throw new Error('Unknown format');
+}
+
+document.getElementById('fc-convert-btn').addEventListener('click', () => {
+  hideErr('fc-err');
+  const from = document.getElementById('fc-from').value;
+  const to   = document.getElementById('fc-to').value;
+  const txt  = document.getElementById('fc-in').value.trim();
+  if (!txt) return;
+  try {
+    document.getElementById('fc-out').value = fcSerialize(fcParse(txt, from), to);
+  } catch (e) { showErr('fc-err', e.message); }
+});
+
+document.getElementById('fc-swap-btn').addEventListener('click', () => {
+  const f = document.getElementById('fc-from');
+  const t = document.getElementById('fc-to');
+  const i = document.getElementById('fc-in');
+  const o = document.getElementById('fc-out');
+  [f.value, t.value] = [t.value, f.value];
+  if (o.value) { i.value = o.value; o.value = ''; }
+});
+
+document.getElementById('fc-in').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') document.getElementById('fc-convert-btn').click();
+});
+
+copyBtn('fc-copy', 'fc-out');
+copyBtn('fc-in-copy', 'fc-in');
+</script>
+
+</body>
+</html>

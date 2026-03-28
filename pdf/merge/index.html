@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Merge PDFs — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    .pdf-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .drop-zone {
+      border: 2px dashed var(--border2);
+      border-radius: var(--r);
+      padding: 36px 24px;
+      text-align: center;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 17px;
+      transition: border-color .15s, color .15s;
+    }
+    .drop-zone:hover, .drop-zone.over { border-color: var(--accent); color: var(--text); }
+    .drop-zone input[type="file"] { display: none; }
+    .drop-zone .dz-hint { font-size: 14px; margin-top: 6px; color: var(--text-muted); }
+    .file-list { display: flex; flex-direction: column; gap: 6px; }
+    .file-item {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+    }
+    .file-item .fi-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .file-item .fi-size { color: var(--text-muted); font-size: 14px; white-space: nowrap; }
+    .fi-move { display: flex; flex-direction: column; gap: 2px; }
+    .fi-btn {
+      background: none; border: none; color: var(--text-dim);
+      font-size: 13px; line-height: 1; padding: 2px 5px;
+      cursor: pointer; border-radius: 3px; box-shadow: none;
+    }
+    .fi-btn:hover { background: var(--border2); color: var(--text); transform: none; box-shadow: none; }
+    .fi-btn.remove { font-size: 16px; padding: 2px 6px; }
+    .actions { display: flex; gap: 8px; align-items: center; }
+    .file-count { font-size: 15px; color: var(--text-dim); margin-left: auto; }
+    .progress-wrap { display: none; }
+    .progress-wrap.on { display: block; }
+    .progress-bar-bg { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; height: 8px; overflow: hidden; }
+    .progress-bar-fill { background: var(--accent); height: 100%; width: 0%; border-radius: 20px; transition: width .2s; }
+    .progress-label { font-size: 14px; color: var(--text-dim); margin-top: 6px; }
+  </style>
+</head>
+<body data-page="pdf-merge">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Merge PDFs</span>
+    </div>
+    <main>
+      <div class="pdf-wrap">
+
+        <label class="drop-zone" id="mg-drop-zone">
+          <input type="file" id="mg-file-input" accept=".pdf,application/pdf" multiple>
+          <div>Drop PDF files here or <strong>click to browse</strong></div>
+          <div class="dz-hint">Select two or more PDFs — they will be merged in the order shown below.</div>
+        </label>
+
+        <div class="file-list" id="mg-file-list"></div>
+
+        <div class="actions" id="mg-actions" style="display:none">
+          <button id="mg-merge-btn">Merge PDFs</button>
+          <button class="ghost" id="mg-clear-btn">Clear all</button>
+          <span class="file-count" id="mg-file-count"></span>
+        </div>
+
+        <div class="progress-wrap" id="mg-progress-wrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="mg-progress-fill"></div></div>
+          <div class="progress-label" id="mg-progress-label">Processing…</div>
+        </div>
+
+        <div class="err" id="mg-err"></div>
+
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+(function () {
+  const dropZone     = document.getElementById('mg-drop-zone');
+  const fileInput    = document.getElementById('mg-file-input');
+  const fileList     = document.getElementById('mg-file-list');
+  const actions      = document.getElementById('mg-actions');
+  const mergeBtn     = document.getElementById('mg-merge-btn');
+  const clearBtn     = document.getElementById('mg-clear-btn');
+  const fileCount    = document.getElementById('mg-file-count');
+  const progressWrap = document.getElementById('mg-progress-wrap');
+  const progressFill = document.getElementById('mg-progress-fill');
+  const progressLabel= document.getElementById('mg-progress-label');
+  const errEl        = document.getElementById('mg-err');
+
+  let files = [];
+  let nextId = 0;
+
+  dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('over'); });
+  dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('over'); });
+  dropZone.addEventListener('drop', function (e) {
+    e.preventDefault(); dropZone.classList.remove('over');
+    addFiles(Array.from(e.dataTransfer.files));
+  });
+  fileInput.addEventListener('change', function () { addFiles(Array.from(fileInput.files)); fileInput.value = ''; });
+
+  function addFiles(incoming) {
+    const pdfs = incoming.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    if (pdfs.length < incoming.length) showErr('Only PDF files are accepted. Non-PDF files were ignored.');
+    else hideErr();
+    pdfs.forEach(f => files.push({ file: f, id: nextId++ }));
+    render();
+  }
+
+  function removeFile(id) { files = files.filter(f => f.id !== id); render(); }
+
+  function moveFile(id, dir) {
+    const idx = files.findIndex(f => f.id === id);
+    const target = idx + dir;
+    if (target < 0 || target >= files.length) return;
+    [files[idx], files[target]] = [files[target], files[idx]];
+    render();
+  }
+
+  function render() {
+    fileList.innerHTML = '';
+    files.forEach(function (entry, idx) {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+
+      const move = document.createElement('div');
+      move.className = 'fi-move';
+
+      const up = document.createElement('button');
+      up.className = 'fi-btn'; up.textContent = '▲'; up.title = 'Move up';
+      up.disabled = idx === 0;
+      up.addEventListener('click', function () { moveFile(entry.id, -1); });
+
+      const down = document.createElement('button');
+      down.className = 'fi-btn'; down.textContent = '▼'; down.title = 'Move down';
+      down.disabled = idx === files.length - 1;
+      down.addEventListener('click', function () { moveFile(entry.id, 1); });
+
+      move.appendChild(up); move.appendChild(down);
+
+      const name = document.createElement('div');
+      name.className = 'fi-name'; name.textContent = entry.file.name; name.title = entry.file.name;
+
+      const size = document.createElement('div');
+      size.className = 'fi-size'; size.textContent = formatSize(entry.file.size);
+
+      const remove = document.createElement('button');
+      remove.className = 'fi-btn remove'; remove.textContent = '✕'; remove.title = 'Remove';
+      remove.addEventListener('click', function () { removeFile(entry.id); });
+
+      item.appendChild(move); item.appendChild(name); item.appendChild(size); item.appendChild(remove);
+      fileList.appendChild(item);
+    });
+
+    const has = files.length > 0;
+    actions.style.display = has ? 'flex' : 'none';
+    fileCount.textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
+    mergeBtn.disabled = files.length < 2;
+  }
+
+  mergeBtn.addEventListener('click', async function () {
+    if (files.length < 2) return;
+    hideErr();
+    setProgress(0, 'Starting…');
+    mergeBtn.disabled = true; clearBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = PDFLib;
+      const merged = await PDFDocument.create();
+
+      for (let i = 0; i < files.length; i++) {
+        setProgress(Math.round((i / files.length) * 90), 'Reading ' + files[i].file.name + '…');
+        const bytes = await files[i].file.arrayBuffer();
+        const doc = await PDFDocument.load(bytes);
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+
+      setProgress(95, 'Writing output…');
+      const output = await merged.save();
+      setProgress(100, 'Done!');
+      downloadBlob(new Blob([output], { type: 'application/pdf' }), 'merged.pdf');
+      setTimeout(function () { progressWrap.classList.remove('on'); }, 1500);
+    } catch (e) {
+      progressWrap.classList.remove('on');
+      showErr('Merge failed: ' + e.message);
+    } finally {
+      mergeBtn.disabled = files.length < 2;
+      clearBtn.disabled = false;
+    }
+  });
+
+  clearBtn.addEventListener('click', function () {
+    files = []; hideErr(); progressWrap.classList.remove('on'); render();
+  });
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function setProgress(pct, label) {
+    progressWrap.classList.add('on');
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = label;
+  }
+  function showErr(msg) { errEl.textContent = msg; errEl.classList.add('on'); }
+  function hideErr() { errEl.textContent = ''; errEl.classList.remove('on'); }
+}());
+</script>
+
+</body>
+</html>

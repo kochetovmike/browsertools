@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Code — OneTabTools</title>
+  <meta name="base-href" content="../">
+  <title>QR Generator — OneTabTools</title>
   <link rel="icon" type="image/svg+xml" href="../src/favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -15,78 +16,59 @@
       gap: 24px;
       padding-top: 48px;
     }
-
     .qr-input-row {
       display: flex;
       gap: 8px;
       width: 100%;
       max-width: 620px;
     }
-
-    .qr-input-row input[type="text"] {
-      flex: 1;
-    }
-
+    .qr-input-row input[type="text"] { flex: 1; }
     .qr-canvas-wrap {
       background: #fff;
       border-radius: 8px;
       padding: 20px;
       display: none;
     }
-
-    .qr-canvas-wrap canvas {
-      display: block;
-    }
-
-    .qr-download-row {
-      display: none;
-      gap: 8px;
-    }
-
-    .err {
-      font-size: 16px;
-      color: var(--err);
-      padding: 6px 10px;
-      background: rgba(224,80,80,.07);
-      border: 1px solid rgba(224,80,80,.2);
-      border-radius: var(--r);
-      display: none;
-      max-width: 620px;
-      width: 100%;
-    }
-    .err.on { display: block; }
+    .qr-canvas-wrap canvas { display: block; }
+    .qr-download-row { display: none; gap: 8px; }
   </style>
 </head>
-<body>
+<body data-page="qr-generator">
 
-<header>
-  <a class="logo" href="../" style="text-decoration:none">OneTab<span>Tools</span><span style="color:var(--text);font-weight:bold;margin-left:8px">/ QR Generator</span></a>
-</header>
-
-<main>
-  <div class="qr-wrap">
-
-    <div class="qr-input-row">
-      <input type="text" id="qr-input" placeholder="Enter a URL or text…" autocomplete="off" spellcheck="false">
-      <button id="qr-btn">Generate</button>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">QR Generator</span>
     </div>
+    <main>
+      <div class="qr-wrap">
 
-    <div class="err" id="qr-err"></div>
+        <div class="qr-input-row">
+          <input type="text" id="qr-input" placeholder="Enter a URL or text…" autocomplete="off" spellcheck="false">
+          <button id="qr-btn">Generate</button>
+        </div>
 
-    <div class="qr-canvas-wrap" id="qr-canvas-wrap">
-      <div id="qr-output"></div>
-    </div>
+        <div class="err" id="qr-err"></div>
 
-    <div class="qr-download-row" id="qr-download-row">
-      <button id="qr-dl-png">Download PNG</button>
-      <button class="ghost" id="qr-copy-btn">Copy Image</button>
-    </div>
+        <div class="qr-canvas-wrap" id="qr-canvas-wrap">
+          <div id="qr-output"></div>
+        </div>
 
+        <div class="qr-download-row" id="qr-download-row">
+          <button id="qr-dl-png">Download PNG</button>
+          <button class="ghost" id="qr-copy-btn">Copy Image</button>
+        </div>
+
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
   </div>
-</main>
+</div>
 
-<footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
-
+<script src="../src/nav.js"></script>
 <script>
   const input       = document.getElementById('qr-input');
   const btn         = document.getElementById('qr-btn');
@@ -97,48 +79,31 @@
   const dlPng       = document.getElementById('qr-dl-png');
   const copyBtn     = document.getElementById('qr-copy-btn');
 
-  function showErr(msg) {
-    errEl.textContent = msg;
-    errEl.classList.add('on');
-  }
-  function hideErr() {
-    errEl.textContent = '';
-    errEl.classList.remove('on');
-  }
-
-  function getCanvas() {
-    return output.querySelector('canvas');
-  }
+  function showErr(msg) { errEl.textContent = msg; errEl.classList.add('on'); }
+  function hideErr() { errEl.textContent = ''; errEl.classList.remove('on'); }
+  function getCanvas() { return output.querySelector('canvas'); }
 
   function generate() {
     const text = input.value.trim();
     hideErr();
-
     if (!text) {
       showErr('Please enter a URL or text to encode.');
       canvasWrap.style.display = 'none';
       downloadRow.style.display = 'none';
       return;
     }
-
     output.innerHTML = '';
     new QRCode(output, {
-      text: text,
-      width: 320,
-      height: 320,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
+      text: text, width: 320, height: 320,
+      colorDark: '#000000', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.H
     });
-
     canvasWrap.style.display = 'block';
     downloadRow.style.display = 'flex';
   }
 
   btn.addEventListener('click', generate);
-  input.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') generate();
-  });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') generate(); });
 
   dlPng.addEventListener('click', function () {
     const canvas = getCanvas();

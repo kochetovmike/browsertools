@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Random Key — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-keygen">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Random Key Generator</span>
+    </div>
+    <main>
+      <div class="controls" style="flex-direction:column;align-items:flex-start;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="font-size:16px;color:var(--text-dim)">Length</label>
+          <input type="number" id="kg-length" value="32" min="1" max="4096" style="width:90px">
+          <button id="kg-gen-btn">Generate</button>
+          <button class="ghost" id="kg-copy-btn">Copy</button>
+        </div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap">
+          <label class="kg-cb"><input type="checkbox" id="kg-lower" checked> Lowercase (a–z)</label>
+          <label class="kg-cb"><input type="checkbox" id="kg-upper" checked> Uppercase (A–Z)</label>
+          <label class="kg-cb"><input type="checkbox" id="kg-digits" checked> Numbers (0–9)</label>
+          <label class="kg-cb"><input type="checkbox" id="kg-special" checked> Special (!@#$…)</label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          Generated Key
+          <span id="kg-len-info" style="color:var(--text-muted);font-size:13px"></span>
+        </div>
+        <textarea id="kg-out" readonly placeholder="Click Generate…" style="min-height:120px;font-size:15px;word-break:break-all"></textarea>
+      </div>
+      <div class="err" id="kg-err"></div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+(function () {
+  function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+  function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+
+  const LOWER   = 'abcdefghijklmnopqrstuvwxyz';
+  const UPPER   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const DIGITS  = '0123456789';
+  const SPECIAL = '!@#$%^&*()-_=+[]{}|;:,.<>?';
+
+  const lenEl     = document.getElementById('kg-length');
+  const outEl     = document.getElementById('kg-out');
+  const infoEl    = document.getElementById('kg-len-info');
+  const genBtn    = document.getElementById('kg-gen-btn');
+  const copyBtnEl = document.getElementById('kg-copy-btn');
+
+  function generate() {
+    hideErr('kg-err');
+    const len = parseInt(lenEl.value, 10);
+    if (!len || len < 1 || len > 4096) { showErr('kg-err', 'Length must be between 1 and 4096.'); return; }
+
+    let charset = '';
+    if (document.getElementById('kg-lower').checked)   charset += LOWER;
+    if (document.getElementById('kg-upper').checked)   charset += UPPER;
+    if (document.getElementById('kg-digits').checked)  charset += DIGITS;
+    if (document.getElementById('kg-special').checked) charset += SPECIAL;
+
+    if (!charset) { showErr('kg-err', 'Select at least one character type.'); return; }
+
+    const arr = new Uint32Array(len);
+    crypto.getRandomValues(arr);
+    outEl.value = Array.from(arr, n => charset[n % charset.length]).join('');
+    infoEl.textContent = len + ' characters';
+  }
+
+  genBtn.addEventListener('click', generate);
+
+  copyBtnEl.addEventListener('click', function () {
+    if (!outEl.value) return;
+    navigator.clipboard.writeText(outEl.value).then(function () {
+      const orig = copyBtnEl.textContent;
+      copyBtnEl.textContent = 'Copied!';
+      copyBtnEl.classList.add('ok');
+      setTimeout(function () { copyBtnEl.textContent = orig; copyBtnEl.classList.remove('ok'); }, 1500);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

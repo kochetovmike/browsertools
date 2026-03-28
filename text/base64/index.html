@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="base-href" content="../../">
+  <title>Base64 — OneTabTools</title>
+  <link rel="icon" type="image/svg+xml" href="../../src/favicon.svg">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body data-page="text-base64">
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="page-wrap">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Open navigation">&#9776;</button>
+      <span class="topbar-title">Base64</span>
+    </div>
+    <main>
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="b64-text">Text</button>
+        <button class="tab-btn" data-tab="b64-file">File</button>
+      </div>
+
+      <!-- Text tab -->
+      <div id="b64-text" class="tab-pane active">
+        <div class="controls">
+          <button id="b64-enc-btn">Encode →</button>
+          <button id="b64-dec-btn">← Decode</button>
+          <button class="ghost" id="b64-swap-btn">⇄ Swap</button>
+        </div>
+        <div class="panels">
+          <div class="panel">
+            <div class="panel-head">Input <button class="mini" id="b64-in-copy">Copy</button></div>
+            <textarea id="b64-in" placeholder="Plain text to encode, or Base64 to decode..."></textarea>
+          </div>
+          <div class="panel">
+            <div class="panel-head">Output <button class="mini" id="b64-copy">Copy</button></div>
+            <textarea id="b64-out" readonly></textarea>
+          </div>
+        </div>
+        <div class="err" id="b64-err"></div>
+      </div>
+
+      <!-- File tab -->
+      <div id="b64-file" class="tab-pane">
+        <div class="panels">
+          <div class="panel">
+            <div class="file-card">
+              <div class="file-card-title">File → Base64</div>
+              <label class="drop-zone" id="drop-zone">
+                <input type="file" id="file-in">
+                <div>Drop a file here or <strong>click to browse</strong></div>
+                <div class="dz-hint" id="file-name">No file selected</div>
+              </label>
+              <div class="controls" style="flex-wrap:nowrap">
+                <button id="file-enc-btn">Encode to Base64</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="file-card" style="flex:1">
+              <div class="file-card-title">Base64 → File</div>
+              <textarea id="b64-file-area" placeholder="Paste Base64 here, then click Decode..." style="min-height:140px;flex:1"></textarea>
+              <div class="controls">
+                <button id="file-dec-btn">Decode &amp; Download</button>
+              </div>
+              <div class="err" id="b64f-err"></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Base64 Output <button class="mini" id="b64f-copy">Copy</button></div>
+          <textarea id="b64f-out" readonly placeholder="Base64 result..."></textarea>
+        </div>
+      </div>
+    </main>
+    <footer>OneTabTools by Mikhail Kochetov &nbsp;·&nbsp; All processing is done locally in your browser.</footer>
+  </div>
+</div>
+
+<script src="../../src/nav.js"></script>
+<script>
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('on'); }
+function hideErr(id) { const el = document.getElementById(id); el.textContent = ''; el.classList.remove('on'); }
+function copyBtn(btnId, taId) {
+  document.getElementById(btnId).addEventListener('click', () => {
+    const ta = document.getElementById(taId);
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById(btnId);
+      const orig = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Text encode/decode
+document.getElementById('b64-enc-btn').addEventListener('click', () => {
+  hideErr('b64-err');
+  const v = document.getElementById('b64-in').value;
+  try { document.getElementById('b64-out').value = btoa(unescape(encodeURIComponent(v))); }
+  catch (e) { showErr('b64-err', e.message); }
+});
+document.getElementById('b64-dec-btn').addEventListener('click', () => {
+  hideErr('b64-err');
+  const v = document.getElementById('b64-in').value.trim();
+  try { document.getElementById('b64-out').value = decodeURIComponent(escape(atob(v))); }
+  catch (e) { showErr('b64-err', 'Invalid Base64: ' + e.message); }
+});
+document.getElementById('b64-swap-btn').addEventListener('click', () => {
+  const a = document.getElementById('b64-in');
+  const b = document.getElementById('b64-out');
+  if (b.value) { a.value = b.value; b.value = ''; }
+});
+copyBtn('b64-copy', 'b64-out');
+copyBtn('b64-in-copy', 'b64-in');
+
+// File encode/decode
+let _selectedFile = null;
+const dropZone = document.getElementById('drop-zone');
+const fileIn   = document.getElementById('file-in');
+
+fileIn.addEventListener('change', e => {
+  _selectedFile = e.target.files[0];
+  if (_selectedFile) updateFileName(_selectedFile);
+});
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) { _selectedFile = f; updateFileName(f); }
+});
+function updateFileName(f) {
+  const sz = f.size < 1024 ? f.size + ' B'
+           : f.size < 1048576 ? (f.size/1024).toFixed(1) + ' KB'
+           : (f.size/1048576).toFixed(1) + ' MB';
+  document.getElementById('file-name').textContent = f.name + ' · ' + sz;
+}
+document.getElementById('file-enc-btn').addEventListener('click', () => {
+  hideErr('b64f-err');
+  if (!_selectedFile) { showErr('b64f-err', 'Select a file first.'); return; }
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('b64f-out').value = reader.result.split(',')[1]; };
+  reader.readAsDataURL(_selectedFile);
+});
+document.getElementById('file-dec-btn').addEventListener('click', () => {
+  hideErr('b64f-err');
+  const b64 = document.getElementById('b64-file-area').value.trim();
+  if (!b64) { showErr('b64f-err', 'Paste Base64 data above first.'); return; }
+  try {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const blob = new Blob([arr]);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'decoded_file'; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { showErr('b64f-err', 'Invalid Base64: ' + e.message); }
+});
+copyBtn('b64f-copy', 'b64f-out');
+</script>
+
+</body>
+</html>
