@@ -39,7 +39,7 @@ body {
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 210px;
+  width: 250px;
   background: var(--surface);
   border: 1px solid rgba(90, 156, 248, 0.12);
   border-radius: 14px;
@@ -99,22 +99,22 @@ body {
 .nav-group-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px 5px;
-  font-size: 10px;
+  gap: 7px;
+  padding: 9px 14px 6px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-muted);
 }
 
-.nav-group-icon { font-size: 12px; line-height: 1; opacity: .7; }
+.nav-group-icon { font-size: 17px; line-height: 1; opacity: .7; }
 
 .nav-item {
   display: block;
-  padding: 6px 10px;
+  padding: 8px 12px;
   margin: 2px 8px;
-  font-size: 14px;
+  font-size: 17px;
   color: var(--text-dim);
   text-decoration: none;
   border-radius: 8px;
@@ -135,7 +135,7 @@ body {
 
 /* ── Logo ── */
 .logo {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: bold;
   color: var(--text);
   white-space: nowrap;
@@ -157,7 +157,7 @@ body {
 
 /* ── Page wrap (right side) ── */
 .page-wrap {
-  margin-left: 242px; /* 16px gap + 210px sidebar + 16px right gap */
+  margin-left: 282px; /* 16px gap + 250px sidebar + 16px right gap */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -544,8 +544,8 @@ input:focus {
 /* ── Footer ── */
 footer {
   margin-top: auto;
-  margin-left: -242px;
-  width: calc(100% + 242px);
+  margin-left: -282px;
+  width: calc(100% + 282px);
   border-top: 1px solid var(--border);
   padding: 12px 24px;
   text-align: center;
